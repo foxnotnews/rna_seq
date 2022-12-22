@@ -1,52 +1,118 @@
+#libraries and data
 setwd("C:/Users/carla/Documents/rna_seq")
-count <- read.table("count_arrange.txt", header = TRUE)
+count <- read.table("count_arrange.txt", header = TRUE, row.names = 1)
 library("DESeq2")
+library("ggplot2")
+library("clusterProfiler")
+library("org.Mm.eg.db")
+library("enrichplot")
+library("gridExtra")
 
 
+#data specification  for DEseq analysis 
 condition=as.factor(c(rep("lung",5), rep("control_lung",3),
                             rep( "blood",5), rep("control_blood",3)))
 
-
-cts=as.matrix(count[2:17])
-rownames(cts)=count$Geneid
-
 coldata=data.frame(condition)
-rownames(coldata)=colnames(cts)
+rownames(coldata)=colnames(count)
 
-dds=DESeqDataSetFromMatrix(cts, coldata , design =  ~as.matrix(condition))
+matrix=DESeqDataSetFromMatrix(count, coldata , design =  ~condition)
 
-dds=DESeq(dds)
-
-dds=vst(dds, blind=T)
-plotPCA(dds, main="PCA")
-
-'''
-lung=round(rowMeans(count[colnames(count)[2:6]]))
-control_lung=rowMeans(count[colnames(count)[7:9]])
-blood=rowMeans(count[colnames(count)[10:14]])
-control_blood=rowMeans(count[colnames(count)[15:17]])
-'''
+#DES
+dds=DESeq(matrix)
 
 
+vds=vst(dds, blind=T)
+plotPCA(vds)+ggtitle("PCA")+
+  theme(plot.title = element_text(hjust = 0.5)) 
 
 
-DESeqDataSetFromMatrix(countData, data.frame(colData) , design=~colData )
-
-'''
-treatment2=count[c("Geneid","SRR7821949_sorted.bam",
-                             "SRR7821953_sorted.bam",
-                             "SRR7821950_sorted.bam",
-                             "SRR7821951_sorted.bam",
-                             "SRR7821952_sorted.bam")]
-
-control=count[c("Geneid","SRR7821937_sorted.bam",
-                           "SRR7821938_sorted.bam",
-                           "SRR7821939_sorted.bam")]
-
-control2=count[c("Geneid","SRR7821968_sorted.bam",
-                           "SRR7821969_sorted.bam",
-                           "SRR7821970_sorted.bam")]
-'''
 packageVersion("DESeq2")
+
+
+#part6 blood 
+
+colData(dds)
+resultsNames(vds)
+
+
+res=results(dds, contrast = c("condition","blood", "control_blood"))
+res=na.omit(res)
+
+#DE 
+nrow(res[res$padj<0.05,])
+
+#upregulated
+nrow(res[res$padj<0.05 & res$log2FoldChange >0,])
+
+
+#downregulated
+nrow(res[res$padj<0.05 & res$log2FoldChange <0,])
+
+
+#top 10
+res[with(res,order(log2FoldChange, decreasing = TRUE)),][1:10,]
+
+res[res$padj<0.01 & res$log2FoldChange >5,][1:5]
+
+# Lung step 6 
+res2=results(dds, contrast = c("condition","lung", "control_lung"))
+res2=na.omit(res2)
+
+
+
+nrow(res2[res$pvalue<0.01,])
+nrow(res2[res$pvalue<0.05,])
+
+#DE 
+nrow(res2[res$padj<0.05,])
+
+#upregulated
+nrow(res2[res2$padj<0.05 & res2$log2FoldChange >0,])
+
+
+#downregulated
+nrow(res2[res2$padj<0.05 & res2$log2FoldChange <0,])
+
+#top 10
+res2[with(res,order(log2FoldChange, decreasing =T)),][1:5,]
+
+res2[res2$padj<0.01 & res2$log2FoldChange <5,]
+
+
+#7
+genes_to_test=rownames(res[res$log2FoldChange>0.5,])
+
+
+
+ego <- enrichGO(gene          = genes_to_test,
+                universe      = row.names(count),
+                OrgDb         = "org.Mm.eg.db",
+                ont           = "BP",
+                keyType = "ENSEMBL")
+head(ego)
+
+a=barplot(ego)+
+  ggtitle("Overrepresentation in Blood")
+
+
+#7 lung
+
+genes_to_test2=rownames(res2[res2$log2FoldChange>0.5,])
+
+
+
+ego2 <- enrichGO(gene          = genes_to_test2,
+                universe      = row.names(count),
+                OrgDb         = "org.Mm.eg.db",
+                ont           = "BP",
+                keyType = "ENSEMBL")
+head(ego)
+
+b=barplot(ego2)+
+  ggtitle("Overrepresentation in Lung")
+
+grid.arrange(a,b,ncol=2)
+
 
       
