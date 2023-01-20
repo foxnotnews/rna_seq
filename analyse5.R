@@ -91,7 +91,7 @@ genes_to_test=rownames(res[ res$log2FoldChange>2,])
 
 ego <- enrichGO(gene          = genes_to_test,
                 universe      = row.names(count),
-                pvalueCutoff = 0.001,
+                pvalueCutoff = 0.01,
                 OrgDb         = "org.Mm.eg.db",
                 ont           = "ALL",
                 keyType = "ENSEMBL")
