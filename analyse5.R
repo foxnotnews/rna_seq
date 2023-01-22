@@ -56,7 +56,6 @@ nrow(res[res$padj<0.01 & res$log2FoldChange <0,])
 #top 10
 res[with(res,order(log2FoldChange, decreasing = TRUE)),][1:10,]
 
-res[res$padj<0.01 & res$log2FoldChange >5,][1:5]
 
 
 ##lung
@@ -75,10 +74,10 @@ nrow(res2[res2$padj<0.01 & res2$log2FoldChange >0,])
 #downregulated
 nrow(res2[res2$padj<0.01 & res2$log2FoldChange <0,])
 
-#top 10
+#top 5
 res2[with(res,order(log2FoldChange, decreasing =T)),][1:5,]
 
-res2[res2$padj<0.01 & res2$log2FoldChange <5,]
+
 
 
 #7
